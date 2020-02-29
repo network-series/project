@@ -1,0 +1,69 @@
+import tkinter.messagebox as messagebox
+from tkinter import ttk
+from tkinter import *
+import tkinter.filedialog
+class Application(Frame):
+    def __init__(self, master=None):
+        Frame.__init__(self, master)
+        self.master.title('标题')
+        screenwidth = self.winfo_screenwidth()
+        screenheight = self.winfo_screenheight()
+        #设置界面宽度为530，高度为365像素，并且基于屏幕居中
+        width = 530
+        height = 365
+        size = '%dx%d+%d+%d' % (width, height, (screenwidth - width) / 2, (screenheight - height) / 2)
+        self.master.geometry(size)
+        self.pack()
+        self.create_widgets()
+
+
+    def create_widgets(self):
+        Label(self, text="").grid(row=0, pady=5, columnspan=3)
+
+        self.srcLanguage = StringVar()
+        Label(self, text="源语言：").grid(row=1, column=0, sticky='W', pady=5)
+        languages = ('en', 'zh-CN', 'zh-TW', 'ja')
+        ttk.Combobox(self, values=languages, width=6, textvariable=self.srcLanguage, state='readonly').grid(row=1,
+                                                                                                            column=1,
+                                                                                                            sticky='W')
+
+        self.destLanguage = StringVar()
+        Label(self, text="目标语言：").grid(row=1, column=1, sticky='E', padx=80)
+        ttk.Combobox(self, values=languages, width=6, textvariable=self.destLanguage, state='readonly').grid(row=1,
+                                                                                                             column=1,
+                                                                                                             sticky='E',
+                                                                                                             padx=0)
+
+        self.interval = StringVar()
+        Label(self, text="请求间隔(s)：").grid(row=3, sticky='W', pady=5)
+        Entry(self, textvariable=self.interval, width=9).grid(row=3, column=1, sticky='W')
+
+        self.excludeKey = StringVar()
+        Label(self, text="不翻译属性：").grid(row=5, sticky='W', pady=5)
+        Entry(self, textvariable=self.excludeKey, width=40).grid(row=5, column=1, sticky='W')
+        Label(self, text="（多个用,分隔）").grid(row=5, column=2, columnspan=2, sticky='W')
+
+        self.htmlKey = StringVar()
+        Label(self, text="Html标签属性：").grid(row=6, sticky='W', pady=5)
+        Entry(self, textvariable=self.htmlKey, width=40).grid(row=6, column=1, sticky='W')
+        Label(self, text="（多个用,分隔）").grid(row=6, column=2, columnspan=2, sticky='W')
+
+        def xz():
+            filename = tkinter.filedialog.askopenfilename()
+            if filename != '':
+                Label(self, text=filename).grid(row=7, column=1, sticky='w')
+        def xz2():
+            filename = tkinter.filedialog.asksaveasfilename()
+            if filename != '':
+                Label(self, text=filename).grid(row=8, column=1, sticky='w')
+
+
+        Label(self, text="输入文件夹：").grid(row=7, column=0, sticky='W', pady=5)
+        Button(self, text=" ... ", command=xz).grid(row=7, column=2, sticky='W', padx=2)
+
+
+        Label(self, text="输出文件夹：").grid(row=8, column=0, sticky='W', pady=5)
+        Button(self, text=" ... ", command=xz2).grid(row=8, column=2, sticky='W', padx=2)
+        Button(self,text='确定',width=5,height=2).grid(row=14,column=1,sticky='W',padx=100)
+app = Application()
+app.mainloop()
