@@ -1,0 +1,29 @@
+import numpy as np
+
+import cv2
+
+cap = cv2.VideoCapture("1.mp4")
+
+fps = int(cap.get(cv2.CAP_PROP_FPS))
+
+size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+
+ret, frame = cap.read()
+
+i = 0
+
+while ret:
+    cv2.imwrite(str(i)+'.jpg', frame)
+    cv2.waitKey(fps)
+    src = cv2.imread(str(i)+'.jpg', 1)
+    src.tofile("i.bin")  # 将jpg图片保存到二进制文件
+    src2 = np.fromfile("i.bin", dtype=np.uint8)
+    src2 = np.reshape(src2, src.shape)
+    cv2.imshow("img2", src2)
+    cv2.waitKey(0)
+    i = i + 1
+    ret, frame = cap.read()
+
+cap.release()
+cv2.destroyAllWindows()
+
