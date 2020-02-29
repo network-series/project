@@ -1,0 +1,23 @@
+import numpy as np
+import cv2
+from ffmpy3 import FFmpeg
+from PIL import Image
+
+def encoder(bin_path,out_path,time_lim,width,highth):
+    fra = 5
+    img2 = np.fromfile(bin_path, dtype=np.uint8)
+    x=img2.size
+    y=x//(width*highth)//3
+    if (y>time_lim*fra):
+        y=time_lim*fra
+    for i in range(y):
+        m=i*width*highth*3
+        n=(i+1)*width*highth*3
+        img=img2[m:n]
+        img=np.reshape(img,(highth,width,3))
+        im = Image.fromarray(img).convert('RGB')#把每一个三维矩阵当作RGB三通道来处理成彩色图即RGB
+        im.save(str(i)+".jpg")
+    ff = FFmpeg(inputs={'': '-f image2 -r '+str(fra)+' -i %d.jpg'},outputs={out_path: '-vcodec mpeg4'})
+    print(ff.cmd)
+    ff.run()
+    return y
