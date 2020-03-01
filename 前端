@@ -20,38 +20,23 @@ class Application(Frame):
     def create_widgets(self):
         Label(self, text="").grid(row=0, pady=5, columnspan=3)
 
-        self.srcLanguage = StringVar()
-        Label(self, text="源语言：").grid(row=1, column=0, sticky='W', pady=5)
-        languages = ('en', 'zh-CN', 'zh-TW', 'ja')
-        ttk.Combobox(self, values=languages, width=6, textvariable=self.srcLanguage, state='readonly').grid(row=1,
-                                                                                                            column=1,
-                                                                                                            sticky='W')
-
-        self.destLanguage = StringVar()
-        Label(self, text="目标语言：").grid(row=1, column=1, sticky='E', padx=80)
-        ttk.Combobox(self, values=languages, width=6, textvariable=self.destLanguage, state='readonly').grid(row=1,
-                                                                                                             column=1,
-                                                                                                             sticky='E',
-                                                                                                             padx=0)
-
         self.interval = StringVar()
-        Label(self, text="请求间隔(s)：").grid(row=3, sticky='W', pady=5)
+        Label(self, text="时间限制(s)：").grid(row=3, sticky='W', pady=5)
         Entry(self, textvariable=self.interval, width=9).grid(row=3, column=1, sticky='W')
 
-        self.excludeKey = StringVar()
-        Label(self, text="不翻译属性：").grid(row=5, sticky='W', pady=5)
-        Entry(self, textvariable=self.excludeKey, width=40).grid(row=5, column=1, sticky='W')
-        Label(self, text="（多个用,分隔）").grid(row=5, column=2, columnspan=2, sticky='W')
+        self.keyheight = StringVar()
+        Label(self, text="照片的高：").grid(row=5, sticky='W', pady=5)
+        Entry(self, textvariable=self.keyheight, width=40).grid(row=5, column=1, sticky='W')
 
-        self.htmlKey = StringVar()
-        Label(self, text="Html标签属性：").grid(row=6, sticky='W', pady=5)
-        Entry(self, textvariable=self.htmlKey, width=40).grid(row=6, column=1, sticky='W')
-        Label(self, text="（多个用,分隔）").grid(row=6, column=2, columnspan=2, sticky='W')
+        self.keywidth = StringVar()
+        Label(self, text="照片的宽：").grid(row=6, sticky='W', pady=5)
+        Entry(self, textvariable=self.keywidth, width=40).grid(row=6, column=1, sticky='W')
 
         def xz():
             filename = tkinter.filedialog.askopenfilename()
             if filename != '':
                 Label(self, text=filename).grid(row=7, column=1, sticky='w')
+                self.filename=filename
         def xz2():
             filename = tkinter.filedialog.asksaveasfilename()
             if filename != '':
@@ -64,6 +49,6 @@ class Application(Frame):
 
         Label(self, text="输出文件夹：").grid(row=8, column=0, sticky='W', pady=5)
         Button(self, text=" ... ", command=xz2).grid(row=8, column=2, sticky='W', padx=2)
-        Button(self,text='确定',width=5,height=2).grid(row=14,column=1,sticky='W',padx=100)
+        Button(self,text='确定',width=5,height=2, command=self.quit).grid(row=14,column=1,sticky='W',padx=100)
 app = Application()
 app.mainloop()
