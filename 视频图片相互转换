@@ -1,0 +1,35 @@
+import cv2
+import os
+
+
+path = 'E:/vs/pycharm/项目1'
+filelist = os.listdir(path)
+
+fps = 4
+size = (400, 400)
+#可以使用cv2.resize()进行修改
+
+video = cv2.VideoWriter("output.avi", cv2.VideoWriter_fourcc('I', '4', '2', '0'), fps, size)
+
+
+for item in filelist:
+    if item.endswith('.png'):
+        item = path + item
+        img = cv2.imread(item)
+        video.write(img)
+
+
+
+
+cap = cv2.VideoCapture('VideoTest1.avi')
+fps = int(cap.get(cv2.CAP_PROP_FPS))
+size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+ret, frame = cap.read()
+i = 0
+while ret:
+    cv2.imwrite(str(i)+'.png', frame)
+    cv2.waitKey(fps)
+    i = i + 1
+    ret, frame = cap.read()
+cap.release()
+cv2.destroyAllWindows()
