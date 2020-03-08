@@ -1,0 +1,64 @@
+import numpy as np
+from PIL import Image
+import cv2
+import os
+
+'''
+def encoder(bin_path, out_path, time_lim, width, highth):
+    fra = 5
+    img2 = np.fromfile(bin_path, dtype=np.uint8)
+    x = img2.size
+    y = x // (width * highth) // 3
+    if (y > time_lim * fra):
+        y = time_lim * fra
+    for i in range(y):
+        m = i * width * highth * 3
+        n = (i + 1) * width * highth * 3
+        img = img2[m:n]
+        img = np.reshape(img, (highth, width, 3))
+        print(img)
+        im = Image.fromarray(img).convert('RGB')  # 把每一个三维矩阵当作RGB三通道来处理成彩色图即RGB
+        im.save(str(i) + ".png")
+    path = 'E:/vs/pycharm/项目1'
+    filelist = os.listdir(path)
+
+    fps = 4  # 视频每秒4帧
+    size = (400, 400)  # 需要转为视频的图片的尺寸
+    # 可以使用cv2.resize()进行修改
+
+    video = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc('I', '4', '2', '0'), fps, size)
+    # 视频保存在当前目录下
+
+    for item in filelist:
+        if item.endswith('.png'):
+            # 找到路径中所有后缀名为.png的文件，可以更换为.jpg或其它
+            item = path + item
+            img = cv2.imread(item)
+            video.write(img)
+    return y
+'''
+
+def decoder(video_path, bin_path):
+    cap = cv2.VideoCapture(video_path)
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    #size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+    ret, frame = cap.read()
+    i = 0
+    while ret:
+        cv2.imwrite(str(i) + '.png', frame)
+        cv2.waitKey(fps)
+        i = i + 1
+        ret, frame = cap.read()
+    cap.release()
+    cv2.destroyAllWindows()
+    for i in range(0, i):
+        image_dir = str(i) + ".png"
+        x = Image.open(image_dir)  # 打开图片
+        data = np.array(x)
+        print(data)
+        with open(bin_path, 'ab') as f:
+            f.write(data)
+
+
+#encoder("in.bin", "output.avi", 20, 400, 400)
+decoder("VideoTest1.avi", "output.bin")
