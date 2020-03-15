@@ -4,6 +4,9 @@ from ffmpy3 import FFmpeg
 from PIL import Image
 import copy
 # 将每一个二进制都填补成8bit
+
+global l
+l=[]
 def padstring(s):
     s_len = len(s)
     return (10 - s_len) * "0" + s[2:]
@@ -69,7 +72,7 @@ def encoder(bin_path, out_path, time_lim, width, highth):
             img[j* pixel_size:(j + 1) * pixel_size, 0:width] = made_row(bin_slice[j * col_num:(j + 1) * col_num],
                                                                             pixel_size, width)
 
-        
+
         img[highth:highth+8*pixel_size,0:width+8*pixel_size]=255
         img[0:highth,width:width+8*pixel_size] = 255
         img[0:7*pixel_size,width+pixel_size:width+8*pixel_size]=draw_detection_pattern()
@@ -108,10 +111,11 @@ def detecte(image):
     _, gray = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY_INV)
     contours, hierarchy = cv2.findContours(gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     return contours, hierarchy
-
 def compute_1(contours, i, j):
     '''最外面的轮廓和子轮廓的比例'''
     area1 = cv2.contourArea(contours[i])
+    l.append(contours[i][0][0])
+    print(contours[i][0][0])
     area2 = cv2.contourArea(contours[j])
     if area2 == 0:
         return False
@@ -197,8 +201,10 @@ def find(path,image, contours, hierachy, root=0):
      up=box[0][1]
      right=box[2][0]
      down=box[2][1]
-     up=int(down+(up-down)*960/1120)
-     right=int(left+(right-left)*960/1120)
+     up = int(int(l[0][1]) * 48 / 49)
+     right = int(int(l[2][0]) * 48 / 49)
+     # up=int(down+(up-down)*960/1120)
+     # right=int(left+(right-left)*960/1120)
      #print(down,up,left,right)
      result=result[down:up,left:right]
      #cv2.imshow('img', result)
