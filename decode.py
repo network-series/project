@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 import cv2
-
+import PIL as Image
 def reshape_image(image):
     '''归一化图片尺寸：短边400，长边不超过800，短边400，长边超过800以长边800为主'''
     width, height = image.shape[1], image.shape[0]
@@ -15,19 +15,19 @@ def reshape_image(image):
         new_width = int(width / scale)
     out = cv2.resize(image, (new_width, new_height))
     return out
-
-
 def detecte(image):
     '''提取所有轮廓'''
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)#灰度图
     _, gray = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY_INV)
-    contours, hierachy = cv2.findContours(gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    return contours, hierachy
-
-
+    contours, hierarchy = cv2.findContours(gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    return contours, hierarchy
+global l
+l=[]
 def compute_1(contours, i, j):
     '''最外面的轮廓和子轮廓的比例'''
     area1 = cv2.contourArea(contours[i])
+    l.append(contours[i][0][0])
+    print(contours[i][0][0])
     area2 = cv2.contourArea(contours[j])
     if area2 == 0:
         return False
@@ -35,8 +35,6 @@ def compute_1(contours, i, j):
     if abs(ratio - 49.0 / 25):
         return True
     return False
-
-
 def compute_2(contours, i, j):
     '''子轮廓和子子轮廓的比例'''
     area1 = cv2.contourArea(contours[i])
@@ -47,16 +45,12 @@ def compute_2(contours, i, j):
     if abs(ratio - 25.0 / 9):
         return True
     return False
-
-
 def compute_center(contours, i):
     '''计算轮廓中心点'''
     M = cv2.moments(contours[i])
     cx = int(M['m10'] / M['m00'])
     cy = int(M['m01'] / M['m00'])
     return cx, cy
-
-
 def detect_contours(vec):
     '''判断这个轮廓和它的子轮廓以及子子轮廓的中心的间距是否足够小'''
     distance_1 = np.sqrt((vec[0] - vec[2]) ** 2 + (vec[1] - vec[3]) ** 2)
@@ -65,8 +59,6 @@ def detect_contours(vec):
     if sum((distance_1, distance_2, distance_3)) / 3 < 3:
         return True
     return False
-
-
 def juge_angle(rec):
     '''判断寻找是否有三个点可以围成等腰直角三角形'''
     if len(rec) < 3:
@@ -89,7 +81,7 @@ def juge_angle(rec):
     return -1, -1, -1
 
 
-def find(image, contours, hierachy, root=0):
+def find(path,image, contours, hierachy, root=0):
     '''找到符合要求的轮廓'''
     rec = []
     for i in range(len(hierachy)):
@@ -104,6 +96,7 @@ def find(image, contours, hierachy, root=0):
                     rec.append([cx1, cy1, cx2, cy2, cx3, cy3, i, child, child_child])
     '''计算得到所有在比例上符合要求的轮廓中心点'''
     i, j, k = juge_angle(rec)
+    #print(rec)
     if i == -1 or j == -1 or k == -1:
         return
     ts = np.concatenate((contours[rec[i][6]], contours[rec[j][6]], contours[rec[k][6]]))
@@ -111,21 +104,34 @@ def find(image, contours, hierachy, root=0):
     box = cv2.boxPoints(rect)
     box = np.int0(box)
     result = copy.deepcopy(image)
-    cv2.drawContours(result, [box], 0, (0, 0, 255), 2)
-    cv2.drawContours(image, contours, rec[i][6], (255, 0, 0), 2)
-    cv2.drawContours(image, contours, rec[j][6], (255, 0, 0), 2)
-    cv2.drawContours(image, contours, rec[k][6], (255, 0, 0), 2)
-    cv2.imshow('img', image)
-    cv2.waitKey(0)
-    cv2.imshow('img', result)
-    cv2.waitKey(0)
-
+    # cv2.drawContours(result, [box], 0, (0, 0, 255), 1)
+    # cv2.drawContours(image, contours, rec[i][6], (255, 0, 0), 2)
+    # cv2.drawContours(image, contours, rec[j][6], (255, 0, 0), 2)
+    # cv2.drawContours(image, contours, rec[k][6], (255, 0, 0), 2)
+    #外部大正方形
+    left = box[0][0]
+    up = box[0][1]
+    right = box[2][0]
+    down = box[2][1]
+    #up=int(down+(up-down)*960/1120)
+   # right=int(left+(right-left)*960/1120)
+    print(down,up,left,right)
+    result=result[down:up,left:right]
+    result=cv2.resize(result,(400,400),interpolation=cv2.INTER_CUBIC)
+    up=int(400*960/1120)
+    result = result[0:up, 0:up]
+    cv2.imwrite(path, result)
     return
 
-imgpath = "1.jpg"
-image = cv2.imread(imgpath)
-image = reshape_image(image)
-cv2.imshow('sb', image)
-cv2.waitKey(0)
-contours, hierachy = detecte(image)
-find(image, contours, np.squeeze(hierachy))
+
+
+def cut(path):
+    image = cv2.imread(path)
+    image = reshape_image(image)
+    contours, hierarchy = detecte(image)
+    find(path,image, contours, np.squeeze(hierarchy))
+imgpath = "a.jpg"
+cut(imgpath)
+
+
+
