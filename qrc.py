@@ -65,22 +65,26 @@ def encoder(bin_path, out_path, time_lim, width, highth):
         n = (i + 1) * row_num * col_num
         bin_slice = bin_in[m:n]
         extra=7*pixel_size
-        img = np.zeros((highth+8*pixel_size, width+8*pixel_size), dtype=np.uint8)
+        img = np.zeros((highth+6*pixel_size, width+6*pixel_size), dtype=np.uint8)
 
         for j in range(row_num):
 
-            img[j* pixel_size:(j + 1) * pixel_size, 0:width] = made_row(bin_slice[j * col_num:(j + 1) * col_num],
+            img[j* pixel_size+60:(j + 1) * pixel_size+60, 60:width+60] = made_row(bin_slice[j * col_num:(j + 1) * col_num],
                                                                             pixel_size, width)
 
-        left=(row_num+1)*pixel_size
-        print(left)
-        right=(row_num+8)*pixel_size
-        print(right)
-        img[0:right,left-pixel_size:right]=255
-        img[left-pixel_size:right,0:right] = 255
-        img[0:7*pixel_size,left:right]=draw_detection_pattern()
-        img[left:right,0:7*pixel_size]=draw_detection_pattern()
-        img[left:right,left:right]=draw_detection_pattern()
+#         left=(row_num+1)*pixel_size
+#         print(left)
+#         right=(row_num+8)*pixel_size
+#         print(right)
+#         img[0:right,left-pixel_size:right]=255
+#         img[left-pixel_size:right,0:right] = 255
+#         img[0:7*pixel_size,left:right]=draw_detection_pattern()
+#         img[left:right,0:7*pixel_size]=draw_detection_pattern()
+#         img[left:right,left:right]=draw_detection_pattern()
+        img[50:1030,50:55]=255
+        img[50:1030,1025:1030] = 255
+        img[1025:1030,50:1030]=255
+        img[50:55,50:1030]=255
 
 
         im = Image.fromarray(img)
@@ -90,127 +94,38 @@ def encoder(bin_path, out_path, time_lim, width, highth):
     # print(ff.cmd)
     # ff.run()
     return y
-def reshape_image(image):
-    '''归一化图片尺寸：短边400，长边不超过800，短边400，长边超过800以长边800为主'''
-    width, height = image.shape[1], image.shape[0]
-    min_len = width
-    scale = width * 1.0 / 400
-    new_width = 400
-    new_height = int(height / scale)
-    if new_height > 800:
-        new_height = 800
-        scale = height * 1.0 / 800
-        new_width = int(width / scale)
-    out = cv2.resize(image, (new_width, new_height))
-    return out
-def detecte(image):
-    '''提取所有轮廓'''
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)#灰度图
-    _, gray = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU + cv2.THRESH_BINARY_INV)
-    contours, hierarchy = cv2.findContours(gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    return contours, hierarchy
 
-def compute_1(contours, i, j):
-    '''最外面的轮廓和子轮廓的比例'''
-    area1 = cv2.contourArea(contours[i])
-    area2 = cv2.contourArea(contours[j])
-    if area2 == 0:
-        return False
-    ratio = area1 * 1.0 / area2
-    if abs(ratio - 49.0 / 25):
-        return True
-    return False
-def compute_2(contours, i, j):
-    '''子轮廓和子子轮廓的比例'''
-    area1 = cv2.contourArea(contours[i])
-    area2 = cv2.contourArea(contours[j])
-    if area2 == 0:
-        return False
-    ratio = area1 * 1.0 / area2
-    if abs(ratio - 25.0 / 9):
-        return True
-    return False
-def compute_center(contours, i):
-    '''计算轮廓中心点'''
-    M = cv2.moments(contours[i])
-    cx = int(M['m10'] / M['m00'])
-    cy = int(M['m01'] / M['m00'])
-    return cx, cy
-def detect_contours(vec):
-    '''判断这个轮廓和它的子轮廓以及子子轮廓的中心的间距是否足够小'''
-    distance_1 = np.sqrt((vec[0] - vec[2]) ** 2 + (vec[1] - vec[3]) ** 2)
-    distance_2 = np.sqrt((vec[0] - vec[4]) ** 2 + (vec[1] - vec[5]) ** 2)
-    distance_3 = np.sqrt((vec[2] - vec[4]) ** 2 + (vec[3] - vec[5]) ** 2)
-    if sum((distance_1, distance_2, distance_3)) / 3 < 3:
-        return True
-    return False
-def juge_angle(rec):
-    '''判断寻找是否有三个点可以围成等腰直角三角形'''
-    if len(rec) < 3:
-        return -1, -1, -1
-    for i in range(len(rec)):
-        for j in range(i + 1, len(rec)):
-            for k in range(j + 1, len(rec)):
-                distance_1 = np.sqrt((rec[i][0] - rec[j][0]) ** 2 + (rec[i][1] - rec[j][1]) ** 2)
-                distance_2 = np.sqrt((rec[i][0] - rec[k][0]) ** 2 + (rec[i][1] - rec[k][1]) ** 2)
-                distance_3 = np.sqrt((rec[j][0] - rec[k][0]) ** 2 + (rec[j][1] - rec[k][1]) ** 2)
-                if abs(distance_1 - distance_2) < 5:
-                    if abs(np.sqrt(np.square(distance_1) + np.square(distance_2)) - distance_3) < 5:
-                        return i, j, k
-                elif abs(distance_1 - distance_3) < 5:
-                    if abs(np.sqrt(np.square(distance_1) + np.square(distance_3)) - distance_2) < 5:
-                        return i, j, k
-                elif abs(distance_2 - distance_3) < 5:
-                    if abs(np.sqrt(np.square(distance_2) + np.square(distance_3)) - distance_1) < 5:
-                        return i, j, k
-    return -1, -1, -1
-
-
-def find(path,image, contours, hierachy, root=0):
-    '''找到符合要求的轮廓'''
-    rec = []
-    for i in range(len(hierachy)):
-        child = hierachy[i][2]
-        child_child = hierachy[child][2]
-        if child != -1 and hierachy[child][2] != -1:
-            if compute_1(contours, i, child) and compute_2(contours, child, child_child):
-                cx1, cy1 = compute_center(contours, i)
-                cx2, cy2 = compute_center(contours, child)
-                cx3, cy3 = compute_center(contours, child_child)
-                if detect_contours([cx1, cy1, cx2, cy2, cx3, cy3]):
-                    rec.append([cx1, cy1, cx2, cy2, cx3, cy3, i, child, child_child])
-    '''计算得到所有在比例上符合要求的轮廓中心点'''
-    i, j, k = juge_angle(rec)
-    if i == -1 or j == -1 or k == -1:
-        return
-    ts = np.concatenate((contours[rec[i][6]], contours[rec[j][6]], contours[rec[k][6]]))
-    rect = cv2.minAreaRect(ts)
-    box = cv2.boxPoints(rect)
-    box = np.int0(box)
-    result = copy.deepcopy(image)
-    # cv2.drawContours(result, [box], 0, (0, 0, 255), 2)
-    # cv2.drawContours(image, contours, rec[i][6], (255, 0, 0), 2)
-    # cv2.drawContours(image, contours, rec[j][6], (255, 0, 0), 2)
-    # cv2.drawContours(image, contours, rec[k][6], (255, 0, 0), 2)
-    print(ts)
-    print(box)
-    left=box[0][0]
-    up=int(box[0][1]*0.9)
-    right=int(box[2][0]*0.9)
-    down=box[2][1]
-    print(down,up,left,right)
-    result=result[down:up,left:right]
-    cv2.imshow('img', result)
-    cv2.imwrite(path,result)
+def cut(img):
+    contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    draw_img0 = cv2.drawContours(img.copy(), contours, 0, (0, 255, 255), 1)
+    x, y, w, h = cv2.boundingRect(contours[0])
+    pixel = int((h - 2) * 1 / 50)
+    pix = int((w - 2) * 1 / 50)
+    print(pixel)
+    print(pix)
+    new = img[y + 2 :y + h - 2 , x + 2 :x + w  - 2]
+    cv2.imshow('new', new)
     cv2.waitKey(0)
-    return
+    cv2.destroyAllWindows()
+    return new
+def threshold_demo(image):
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)  #把输入图像灰度化
+    #直接阈值化是对输入的单通道矩阵逐像素进行阈值分割。
+    ret, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_TRIANGLE)
+    print("threshold value %s"%ret)
+    cv2.namedWindow("binary0", cv2.WINDOW_NORMAL)
+    cv2.imshow("binary0", binary)
+    cv2.waitKey(0)
+    return binary
+
+#解码前先运行裁剪，以下三行
+def cut(path)
+    origin=cv2.imread(path)
+    binary=threshold_demo(origin)
+    processed_imge=cut(binary)
+    return processed_image
 
 
-def cut(path):
-    image = cv2.imread(path)
-    image = reshape_image(image)
-    contours, hierarchy = detecte(image)
-    find(path,image, contours, np.squeeze(hierarchy))
 
 def decoder(video_path, bin_path, graph_num):
     ff = FFmpeg(inputs={video_path: None},
