@@ -81,10 +81,10 @@ def encoder(bin_path, out_path, time_lim, width, highth):
 #         img[0:7*pixel_size,left:right]=draw_detection_pattern()
 #         img[left:right,0:7*pixel_size]=draw_detection_pattern()
 #         img[left:right,left:right]=draw_detection_pattern()
-        img[50:1030,50:55]=255
-        img[50:1030,1025:1030] = 255
-        img[1025:1030,50:1030]=255
-        img[50:55,50:1030]=255
+        img[100:1100,100:120]=255
+        img[100:1100,1080:1100] = 255
+        img[1080:1100,100:1100]=255
+        img[100:120,100:1100]=255
 
 
         im = Image.fromarray(img)
@@ -95,36 +95,66 @@ def encoder(bin_path, out_path, time_lim, width, highth):
     # ff.run()
     return y
 
-def cut(img):
-    contours, hierarchy = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    draw_img0 = cv2.drawContours(img.copy(), contours, 0, (0, 255, 255), 1)
-    x, y, w, h = cv2.boundingRect(contours[0])
-    pixel = int((h - 2) * 1 / 50)
-    pix = int((w - 2) * 1 / 50)
-    print(pixel)
-    print(pix)
-    new = img[y + 2 :y + h - 2 , x + 2 :x + w  - 2]
-    cv2.imshow('new', new)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    return new
-def threshold_demo(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)  #把输入图像灰度化
-    #直接阈值化是对输入的单通道矩阵逐像素进行阈值分割。
-    ret, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_TRIANGLE)
-    print("threshold value %s"%ret)
-    cv2.namedWindow("binary0", cv2.WINDOW_NORMAL)
-    cv2.imshow("binary0", binary)
-    cv2.waitKey(0)
-    return binary
+def reshape_image(image):
+    '''归一化图片尺寸：短边400，长边不超过800，短边400，长边超过800以长边800为主'''
+    width, height = image.shape[1], image.shape[0]
+    min_len = width
+    scale = width * 1.0 / 400
+    new_width = 400
+    new_height = int(height / scale)
+    if new_height > 800:
+        new_height = 800
+        scale = height * 1.0 / 800
+        new_width = int(width / scale)
+    out = cv2.resize(image, (new_width, new_height))
+    return out
 
-#解码前先运行裁剪，以下三行
-def cut(path)
-    origin=cv2.imread(path)
-    binary=threshold_demo(origin)
-    processed_imge=cut(binary)
-    return processed_image
+def find(img):
 
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # ret, binary = cv2.threshold(gray, 170, 255, cv2.THRESH_BINARY)
+    edges = cv2.Canny(gray, 100, 150)
+    contour_info = []
+    contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+    largest_area = 0
+    for i in range(len(contours)):
+        area = cv2.contourArea(contours[i])
+        if area > largest_area:
+            largest_area = area
+            largest_coutour_index = i
+    x, y, w, h = cv2.boundingRect(contours[largest_coutour_index])
+    c=sorted(contours,key=cv2.contourArea, reverse=True)[1]
+    rect = cv2.minAreaRect(c)  # 获取包围盒（中心点，宽高，旋转角度）
+    box = np.int0(cv2.boxPoints(rect))
+    draw_img = cv2.drawContours(img.copy(), [box], -1, (0, 0, 255), 3)
+    pixel = int(h/50)
+    pix=int(w/50)
+
+    new = img[y + 2 + pixel:y + h - 2 - pixel, x + 2 + pix:x + w - pix - 2]
+    # cv2.imshow('new', new)
+    # cv2.waitKey(0)
+    # print("box[0]:", box[0])
+    # print("box[1]:", box[1])
+    # print("box[2]:", box[2])
+    # print("box[3]:", box[3])
+    return box, draw_img
+
+def Perspective_transform(box, original_img):
+    x_aver=int(box[0][0]+box[1][0]+box[1][0]+box[3][0])/4
+    #[box[1], box[2], box[0], box[3]]
+    pts1=np.float32([[box[1][0],box[1][1]], box[2], box[0], box[3]])
+    pts2 = np.float32([[0, 0], [300, 0], [0, 300], [300, 300]])
+    M = cv2.getPerspectiveTransform(pts1, pts2)
+    dst = cv2.warpPerspective(original_img, M, (300, 300))
+    dst=dst[6:294,6:294]
+    return dst
+
+def cut(imgpath):
+    ori_img = cv2.imread(imgpath)
+    img = reshape_image(ori_img)
+    box, draw_img = find(img)
+    result = Perspective_transform(box, img)
+    cv2.imwrite('result.png', result)
 
 
 def decoder(video_path, bin_path, graph_num):
@@ -135,8 +165,11 @@ def decoder(video_path, bin_path, graph_num):
 
     for i in range(1, graph_num + 1):
         image_dir = str(i) + ".png"
+        #在这里加剪裁
+        cut(img_dir)
         a = np.zeros((48, 8), dtype=np.uint8)
         x = Image.open(image_dir).convert("L")
+        
 
         #
         # imgpath=''
