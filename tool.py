@@ -5,6 +5,7 @@ from PIL import Image
 import copy
 import math
 import CRC
+import sys
 
 # 将每一个二进制都填补成8bit
 def padstring(s):
@@ -33,6 +34,29 @@ def made_row(s, r_len, c_len):
         else:
             a[0:20, 20 * i:20 * (i + 1)] = 255
     return a
+
+def is_same_frame(image_dir,image1_dir):
+    a=[]
+    b=[]
+    c=0
+    image = cv2.imread(image_dir,0)
+    image1 = cv2.imread(image1_dir,0)
+    for i in range(20):
+        if image[540,760+20*i]<140:
+            a.append(0)
+        else:
+            a.append(1)
+        if image1[540,760+20*i]<140:
+            b.append(0)
+        else:
+            b.append(1)
+    for i in range(20):
+        if a[i]==b[i]:
+            c=c+1
+    if c>18:
+        return 1
+    else:
+        return 0
 
 
 def arr2byte(s,v_pixel_size,h_pixel_size):
@@ -78,7 +102,8 @@ def arr2CRC(a):
             b.append(1)
     return b
     
-def encoder(bin_path,time_lim,out_path="output.mp4", width=960, highth=960):
+def encoder(bin_path,out_path,time_lim, width=960, highth=960):
+    time_lim=int(time_lim)
     fra = 10
     pixel_size = 20
     bin_in = dec2bin(bin_path)
@@ -166,13 +191,14 @@ def cut(imgpath):
     return flag
 
 
-def decoder(video_path,graph_num, bin_path="output.bin",error_path="val.bin",highth=960,width=960,row_num=6,col_num=47):
+def decoder(video_path, bin_path,error_path,highth=960,width=960,row_num=6,col_num=47):
     ff = FFmpeg(inputs={video_path: None},
                 outputs={'': '%d.png'})
     print(ff.cmd)
     ff.run()
 
-    k=1
+    
+    k=2
     while (1==1):
         image_dire=str(k)+".png"
         if cut(image_dire)==0:
@@ -212,9 +238,14 @@ def decoder(video_path,graph_num, bin_path="output.bin",error_path="val.bin",hig
                 f.write(a)
             break
     k=k+5
-
-    for i in range(0,graph_num-1):
-        image_dir = str(k+6*i) + ".png"
+    z=0
+    while(1):
+        image_dir = str(k+6*z) + ".png"
+        #print(image_dir)
+        image_dir_next= str(k+6*z+6) + ".png"
+        d=is_same_frame(image_dir,image_dir_next)
+        if (d==1):
+            break
         cut(image_dir)
         #print(image_dir)
         a = np.zeros((col_num, row_num), dtype=np.uint8)
@@ -247,8 +278,5 @@ def decoder(video_path,graph_num, bin_path="output.bin",error_path="val.bin",hig
                 f.write(a2)
         with open(bin_path, 'ab') as f:
             f.write(a)
+        z=z+1
 
-
-if __name__ == '__main__':
-    encoder("e2.bin","out_video10.mp4",4,960,960)
-    decoder("in1.mp4","output3.bin","error3.bin",960,960,6,47,40)
